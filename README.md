@@ -10,6 +10,10 @@ A simple Android app to automatically turn your TV on and off based on a schedul
 - **Persistent Schedules**: Schedules survive device reboots
 - **Test Power Button**: Test the connection before setting schedules
 
+## Download
+
+You can download the latest debug APK from the [GitHub Actions artifacts](../../actions). Look for the most recent successful workflow run and download the `krontv-debug` artifact.
+
 ## Requirements
 
 - Android 9.0 (API 28) or higher
