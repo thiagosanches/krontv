@@ -1,4 +1,4 @@
-package com.tvscheduler
+package com.krontv
 
 // HID Constants for Bluetooth TV Remote
 const val REMOTE_REPORT_ID = 0x02

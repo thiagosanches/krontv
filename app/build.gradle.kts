@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.tvscheduler"
+    namespace = "com.krontv"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.tvscheduler"
+        applicationId = "com.krontv"
         minSdk = 28
         targetSdk = 34
         versionCode = 1

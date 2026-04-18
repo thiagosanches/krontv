@@ -1,4 +1,4 @@
-package com.tvscheduler
+package com.krontv
 
 import android.content.BroadcastReceiver
 import android.content.Context

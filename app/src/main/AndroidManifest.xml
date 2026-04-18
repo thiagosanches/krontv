@@ -39,8 +39,8 @@
             android:enabled="true"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.tvscheduler.POWER_ON" />
-                <action android:name="com.tvscheduler.POWER_OFF" />
+                <action android:name="com.krontv.POWER_ON" />
+                <action android:name="com.krontv.POWER_OFF" />
             </intent-filter>
         </receiver>
 

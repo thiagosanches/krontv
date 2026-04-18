@@ -1,4 +1,4 @@
-package com.tvscheduler
+package com.krontv
 
 import android.app.AlarmManager
 import android.app.PendingIntent

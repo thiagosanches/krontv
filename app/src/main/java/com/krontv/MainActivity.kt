@@ -1,4 +1,4 @@
-package com.tvscheduler
+package com.krontv
 
 import android.Manifest
 import android.animation.ValueAnimator
