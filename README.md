@@ -2,6 +2,9 @@
 
 A simple Android app to automatically turn your TV on and off based on a schedule using Bluetooth HID.
 
+<img width="331" height="642" alt="image" src="https://github.com/user-attachments/assets/1bf8d135-85b4-43ca-9a97-84e759616680" />
+
+
 ## Features
 
 - **Simple Scheduling**: Set daily turn-on and turn-off times
