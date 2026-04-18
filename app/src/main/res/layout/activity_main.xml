@@ -14,7 +14,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="TV Scheduler"
+            app:title="@string/app_name"
             app:titleTextColor="?attr/colorOnPrimary" />
 
     </com.google.android.material.appbar.AppBarLayout>
@@ -124,6 +124,19 @@
                         android:textSize="15sp"
                         app:icon="@drawable/ic_power"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+                    
+                    <!-- Last Command Status -->
+                    <TextView
+                        android:id="@+id/lastCommandStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:padding="12dp"
+                        android:background="@drawable/circle_secondary_bg"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:visibility="gone"
+                        android:textColor="?attr/colorOnSecondaryContainer" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

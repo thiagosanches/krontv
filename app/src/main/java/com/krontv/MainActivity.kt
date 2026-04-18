@@ -6,13 +6,17 @@ import android.app.AlarmManager
 import android.app.TimePickerDialog
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,6 +28,9 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.krontv.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     
     private lateinit var bluetoothHidManager: BluetoothHidManager
     private lateinit var scheduleManager: ScheduleManager
+    private val bluetoothStateReceiver = BluetoothStateReceiver()
 
     private val bluetoothPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -53,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         setupUI()
         observeViewModel()
         requestPermissions()
+        checkBatteryOptimization()
     }
 
     private fun setupToolbar() {
@@ -63,6 +72,13 @@ class MainActivity : AppCompatActivity() {
         bluetoothHidManager = BluetoothHidManager(this)
         scheduleManager = ScheduleManager(this)
         viewModel.initialize(bluetoothHidManager, scheduleManager)
+        
+        // Register BT state receiver
+        BluetoothStateReceiver.onBluetoothStateChanged = { isOn ->
+            viewModel.onBluetoothStateChanged(isOn)
+        }
+        val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+        registerReceiver(bluetoothStateReceiver, filter)
     }
 
     private fun setupUI() {
@@ -110,6 +126,9 @@ class MainActivity : AppCompatActivity() {
         
         // Update schedule state
         updateScheduleUI(state.scheduleState)
+        
+        // Update last command
+        updateLastCommandUI(state.lastCommand)
         
         // Show loading
         binding.connectionProgress.visibility = if (state.isLoading) View.VISIBLE else View.GONE
@@ -217,7 +236,7 @@ class MainActivity : AppCompatActivity() {
             val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
             if (!alarmManager.canScheduleExactAlarms()) {
                 AlertDialog.Builder(this)
-                    .setTitle("Permission Required")
+                    .setTitle("Alarm Permission Required")
                     .setMessage("This app needs permission to schedule exact alarms for TV power control.")
                     .setPositiveButton("Grant") { _, _ ->
                         startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
@@ -238,7 +257,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+        val bluetoothAdapter = bluetoothManager?.adapter
         val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
         
         if (pairedDevices.isNullOrEmpty()) {
@@ -284,8 +304,42 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun updateLastCommandUI(cmd: CommandHistory?) {
+        if (cmd == null) {
+            binding.lastCommandStatus.visibility = View.GONE
+            return
+        }
+        
+        val timeStr = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(cmd.timestamp))
+        val statusIcon = if (cmd.success) "✓" else "✗"
+        val text = "Last: $statusIcon ${cmd.message} at $timeStr"
+        
+        binding.lastCommandStatus.text = text
+        binding.lastCommandStatus.visibility = View.VISIBLE
+    }
+    
+    private fun checkBatteryOptimization() {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        val packageName = packageName
+        
+        if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            AlertDialog.Builder(this)
+                .setTitle("Battery Optimization")
+                .setMessage("For reliable scheduled commands, disable battery optimization for this app. This ensures scheduled TV power commands work even when your phone is in deep sleep.")
+                .setPositiveButton("Open Settings") { _, _ ->
+                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                    startActivity(intent)
+                }
+                .setNegativeButton("Skip", null)
+                .show()
+        }
+    }
+    
     override fun onDestroy() {
         super.onDestroy()
+        unregisterReceiver(bluetoothStateReceiver)
         viewModel.stopBluetooth()
     }
 }

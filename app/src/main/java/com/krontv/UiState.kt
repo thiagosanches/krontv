@@ -18,10 +18,17 @@ data class ScheduleState(
     val isTurnOffEnabled: Boolean = false
 )
 
+data class CommandHistory(
+    val timestamp: Long = 0,
+    val success: Boolean = false,
+    val message: String = ""
+)
+
 data class UiState(
     val connectionState: ConnectionState = ConnectionState(),
     val scheduleState: ScheduleState = ScheduleState(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val showSuccessMessage: String? = null
+    val showSuccessMessage: String? = null,
+    val lastCommand: CommandHistory? = null
 )

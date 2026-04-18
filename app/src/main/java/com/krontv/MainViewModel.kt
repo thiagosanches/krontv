@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothProfile
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
@@ -34,6 +35,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private val KEY_TURN_ON_ENABLED = booleanPreferencesKey("turn_on_enabled")
         private val KEY_TURN_OFF_ENABLED = booleanPreferencesKey("turn_off_enabled")
         private val KEY_TV_ADDRESS = stringPreferencesKey("tv_address")
+        private val KEY_LAST_CMD_TIME = longPreferencesKey("last_cmd_time")
+        private val KEY_LAST_CMD_SUCCESS = booleanPreferencesKey("last_cmd_success")
+        private val KEY_LAST_CMD_MSG = stringPreferencesKey("last_cmd_msg")
     }
 
     fun initialize(bluetoothManager: BluetoothHidManager, scheduleManager: ScheduleManager) {
@@ -87,10 +91,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun sendPowerCommand() {
         val success = bluetoothHidManager.sendPowerCommand()
-        _uiState.update { it.copy(
-            showSuccessMessage = if (success) "Power command sent!" else null,
-            errorMessage = if (!success) "Failed to send command" else null
-        )}
+        val message = if (success) "Manual command sent" else "Failed to send"
+        
+        viewModelScope.launch {
+            // Save command history
+            getApplication<Application>().dataStore.edit { prefs ->
+                prefs[KEY_LAST_CMD_TIME] = System.currentTimeMillis()
+                prefs[KEY_LAST_CMD_SUCCESS] = success
+                prefs[KEY_LAST_CMD_MSG] = message
+            }
+            
+            // Update UI
+            _uiState.update { it.copy(
+                showSuccessMessage = if (success) "Power command sent!" else null,
+                errorMessage = if (!success) "Failed to send command" else null,
+                lastCommand = CommandHistory(
+                    timestamp = System.currentTimeMillis(),
+                    success = success,
+                    message = message
+                )
+            )}
+        }
     }
 
     fun updateTurnOnTime(hour: Int, minute: Int) {
@@ -185,7 +206,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 isTurnOffEnabled = prefs[KEY_TURN_OFF_ENABLED] ?: false
             )
             
-            _uiState.update { it.copy(scheduleState = scheduleState) }
+            val lastCommand = prefs[KEY_LAST_CMD_TIME]?.let { time ->
+                CommandHistory(
+                    timestamp = time,
+                    success = prefs[KEY_LAST_CMD_SUCCESS] ?: false,
+                    message = prefs[KEY_LAST_CMD_MSG] ?: ""
+                )
+            }
+            
+            _uiState.update { it.copy(
+                scheduleState = scheduleState,
+                lastCommand = lastCommand
+            )}
             updateSchedules()
         }
     }
@@ -208,5 +240,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun stopBluetooth() {
         bluetoothHidManager.stop()
+    }
+    
+    fun onBluetoothStateChanged(isOn: Boolean) {
+        if (isOn) {
+            // BT turned on - restart and reconnect
+            viewModelScope.launch {
+                Thread {
+                    bluetoothHidManager.restart()
+                }.start()
+            }
+        } else {
+            // BT turned off - update UI
+            _uiState.update { it.copy(
+                connectionState = ConnectionState(
+                    isConnected = false,
+                    deviceName = "",
+                    state = BluetoothProfile.STATE_DISCONNECTED,
+                    isRegistered = false
+                )
+            )}
+        }
     }
 }
