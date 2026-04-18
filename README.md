@@ -1,4 +1,4 @@
-# TV Scheduler
+# krontv
 
 A simple Android app to automatically turn your TV on and off based on a schedule using Bluetooth HID.
 
@@ -28,7 +28,7 @@ Enable one of these settings on your TV:
 ## Setup
 
 1. Pair your TV with your Android device via Bluetooth (in Android Settings)
-2. Open TV Scheduler app
+2. Open krontv app
 3. Tap "Connect to TV" and select your TV from the list
 4. Test the connection using "Test Power Button"
 5. Set your desired turn-on and turn-off times
